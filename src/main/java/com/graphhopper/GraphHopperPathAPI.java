@@ -2,6 +2,7 @@ package com.graphhopper;
 
 import com.graphhopper.routing.Path;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**

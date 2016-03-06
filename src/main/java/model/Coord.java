@@ -5,19 +5,19 @@ package model;
  */
 public class Coord {
 
-    private final float latitude;
-    private final float longitude;
+    private final double latitude;
+    private final double longitude;
 
-    public Coord(float latitude, float longitude){
+    public Coord(double latitude, double longitude){
         this.latitude = latitude;
         this.longitude = longitude;
     }
 
-    public float getLatitude() {
+    public double getLatitude() {
         return latitude;
     }
 
-    public float getLongitude() {
+    public double getLongitude() {
         return longitude;
     }
 
@@ -28,15 +28,19 @@ public class Coord {
 
         Coord coord = (Coord) o;
 
-        if (Float.compare(coord.latitude, latitude) != 0) return false;
-        return Float.compare(coord.longitude, longitude) == 0;
+        if (Double.compare(coord.latitude, latitude) != 0) return false;
+        return Double.compare(coord.longitude, longitude) == 0;
 
     }
 
     @Override
     public int hashCode() {
-        int result = (latitude != +0.0f ? Float.floatToIntBits(latitude) : 0);
-        result = 31 * result + (longitude != +0.0f ? Float.floatToIntBits(longitude) : 0);
+        int result;
+        long temp;
+        temp = Double.doubleToLongBits(latitude);
+        result = (int) (temp ^ (temp >>> 32));
+        temp = Double.doubleToLongBits(longitude);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
         return result;
     }
 
