@@ -1,15 +1,15 @@
 package model;
 
-import java.time.ZonedDateTime;
+import org.joda.time.DateTime;
 
 public class TaxiTrip {
-    private final ZonedDateTime pickupDatetime;
-    private final ZonedDateTime dropoffDateTime;
+    private final DateTime pickupDatetime;
+    private final DateTime dropoffDateTime;
     private final int tripDistance;
     private final Coord pickupCoord;
     private final Coord dropoffCoord;
 
-    public TaxiTrip(ZonedDateTime pickupDatetime, ZonedDateTime dropoffDateTime, int tripDistance, Coord pickupCoord, Coord dropoffCoord) {
+    public TaxiTrip(DateTime pickupDatetime, DateTime dropoffDateTime, int tripDistance, Coord pickupCoord, Coord dropoffCoord) {
         this.pickupDatetime = pickupDatetime;
         this.dropoffDateTime = dropoffDateTime;
         this.tripDistance = tripDistance;
@@ -21,7 +21,7 @@ public class TaxiTrip {
         return dropoffCoord;
     }
 
-    public ZonedDateTime getDropoffDateTime() {
+    public DateTime getDropoffDateTime() {
         return dropoffDateTime;
     }
 
@@ -29,7 +29,7 @@ public class TaxiTrip {
         return pickupCoord;
     }
 
-    public ZonedDateTime getPickupDatetime() {
+    public DateTime getPickupDatetime() {
         return pickupDatetime;
     }
 

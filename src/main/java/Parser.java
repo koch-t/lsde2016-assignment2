@@ -3,11 +3,12 @@ import model.TaxiTrip;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.input.BOMInputStream;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import java.io.*;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -50,7 +51,7 @@ public class Parser {
     public final static int COLUMN_DROPOFF_LONGITUDE = 12;
 
     public static TaxiTrip parse(String s) throws IOException {
-        DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.US).withZone(ZoneId.of("America/New_York"));
+        DateTimeFormatter timeFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(DateTimeZone.forID("America/New_York"));
         String[] values = s.split(",");
         Coord pickupCoord = new Coord(Double.parseDouble(values[COLUMN_PICKUP_LATITUDE]),
                 Double.parseDouble(values[COLUMN_PICKUP_LONGITUDE]));
@@ -58,14 +59,14 @@ public class Parser {
                 Double.parseDouble(values[COLUMN_DROPOFF_LONGITUDE]));
 
         int tripDistance = milesToMeter(Float.parseFloat(values[COLUMN_TRIP_DISTANCE]));
-        ZonedDateTime pickupDatetime = ZonedDateTime.parse(values[COLUMN_PICKUP_DATETIME], timeFormat);
-        ZonedDateTime dropoffDateTime = ZonedDateTime.parse(values[COLUMN_DROPOFF_DATETIME], timeFormat);
+        DateTime pickupDatetime = DateTime.parse(values[COLUMN_PICKUP_DATETIME], timeFormat);
+        DateTime dropoffDateTime = DateTime.parse(values[COLUMN_DROPOFF_DATETIME], timeFormat);
 
         return new TaxiTrip(pickupDatetime, dropoffDateTime, tripDistance, pickupCoord, dropoffCoord);
     }
 
     public static List<TaxiTrip> parse(InputStream is) throws IOException {
-        DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.US).withZone(ZoneId.of("America/New_York"));
+        DateTimeFormatter timeFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(DateTimeZone.forID("America/New_York"));
         final Reader reader = new InputStreamReader(new BOMInputStream(is), "UTF-8");
         final CSVParser parser = new CSVParser(reader, DEFAULT.withHeader());
         ArrayList<TaxiTrip> trips = new ArrayList<>(5000000);
@@ -76,8 +77,8 @@ public class Parser {
                     Double.parseDouble(record.get("dropoff_longitude")));
 
             int tripDistance = milesToMeter(Float.parseFloat(record.get("trip_distance")));
-            ZonedDateTime pickupDatetime = ZonedDateTime.parse(record.get("pickup_datetime"), timeFormat);
-            ZonedDateTime dropoffDateTime = ZonedDateTime.parse(record.get("dropoff_datetime"), timeFormat);
+            DateTime pickupDatetime = DateTime.parse(record.get("pickup_datetime"), timeFormat);
+            DateTime dropoffDateTime = DateTime.parse(record.get("dropoff_datetime"), timeFormat);
 
             TaxiTrip trip = new TaxiTrip(pickupDatetime, dropoffDateTime, tripDistance, pickupCoord, dropoffCoord);
             trips.add(trip);
