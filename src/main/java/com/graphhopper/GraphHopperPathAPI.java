@@ -1,25 +1,26 @@
 package com.graphhopper;
 
 import com.graphhopper.routing.Path;
+import com.graphhopper.routing.RoutingAlgorithm;
+import com.graphhopper.routing.util.AlgorithmPreparation;
+import com.graphhopper.routing.util.DefaultEdgeFilter;
 import com.graphhopper.routing.util.EncodingManager;
-import com.graphhopper.routing.util.Weighting;
-import com.graphhopper.storage.*;
-import com.graphhopper.util.Helper;
-import com.graphhopper.util.Unzipper;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import com.graphhopper.routing.util.NoOpAlgorithmPreparation;
 
 /**
  * Created by thomas on 05/03/16.
  */
 public class GraphHopperPathAPI extends GraphHopper {
 
-    public List<Path> calcPaths(GHRequest request){
-        GHResponse ghResponse = new GHResponse();
-        return calcPaths(request, ghResponse);
+    public Path calcPaths(GHRequest request){
+        route(request);
+        AlgorithmPreparation prepare = NoOpAlgorithmPreparation.createAlgoPrepare(getGraph(), request.getAlgorithm(), getEncodingManager().getEncoder(request.getVehicle()), request.getType());
+        RoutingAlgorithm algo = prepare.createAlgo();
+
+        DefaultEdgeFilter edgeFilter = new DefaultEdgeFilter(getEncodingManager().getEncoder(request.getVehicle()));
+
+        int from = getIndex().findClosest(request.getFrom().lat, request.getFrom().lon, edgeFilter).getClosestNode();
+        int to = getIndex().findClosest(request.getTo().lat, request.getTo().lon, edgeFilter).getClosestNode();
+        return algo.calcPath(from, to);
     }
 }

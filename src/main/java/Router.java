@@ -1,9 +1,13 @@
 import com.graphhopper.GHRequest;
 import com.graphhopper.GraphHopperPathAPI;
 import com.graphhopper.routing.Path;
-import com.graphhopper.util.EdgeIteratorState;
-import com.graphhopper.util.shapes.GHPoint;
+import com.graphhopper.routing.util.AllEdgesIterator;
+import com.graphhopper.util.CmdArgs;
+import com.graphhopper.util.EdgeIterator;
+import com.graphhopper.util.PointList;
 import model.Coord;
+import model.GeoJsonFeature;
+import model.GeoJsonLineGeometry;
 import model.TaxiTrip;
 import org.joda.time.DateTime;
 import org.joda.time.Seconds;
@@ -34,7 +38,9 @@ public class Router implements Serializable {
     private void load() {
         if (api == null) {
             api = new GraphHopperPathAPI();
-            api.forServer().setAllowWrites(false).setInMemory().load("graph.zip/new-york_new-york.osm-gh");
+            if (!api.forServer().setInMemory(true, true).load("graph.zip/new-york_new-york.osm-gh")) {
+                throw new IllegalStateException("Graph not loaded");
+            }
         }
     }
 
@@ -50,40 +56,59 @@ public class Router implements Serializable {
         if (startTime.isAfter(endTime)) {
             throw new IllegalArgumentException("EndTime before StartTime");
         }
-        GHRequest req = new GHRequest();
+        GHRequest req = new GHRequest(fromCoord.getLatitude(), fromCoord.getLongitude(), toCoord.getLatitude(), toCoord.getLongitude());
         req.setVehicle("CAR");
-        req.addPoint(new GHPoint(fromCoord.getLatitude(), fromCoord.getLongitude()));
-        req.addPoint(new GHPoint(toCoord.getLatitude(), toCoord.getLongitude()));
-        List<Path> resp = api.calcPaths(req);
-        if (resp.size() == 0) {
+        Path path = api.calcPaths(req);
+        if (path == null) {
             return Collections.emptyList();
         }
-        Collections.sort(resp, new Comparator<Path>() {
+
+        int seconds = (int) Seconds.secondsBetween(startTime, endTime).getSeconds();
+        final ArrayList<EdgeInternal> edges = new ArrayList<>();
+        path.forEveryEdge(new Path.EdgeVisitor() {
             @Override
-            public int compare(Path o1, Path o2) {
-                double distanceDiff1 = distance - o1.getDistance();
-                double distanceDiff2 = distance - o2.getDistance();
-                if (distanceDiff1 < distanceDiff2) {
-                    return -1;
-                } else if (distanceDiff1 > distanceDiff2) {
-                    return 1;
-                } else {
-                    return 0;
-                }
+            public void next(EdgeIterator edgeIterator, int i) {
+                EdgeInternal e = new EdgeInternal();
+                e.distance = edgeIterator.getDistance();
+                e.edgeId = edgeIterator.getEdge();
+                edges.add(e);
             }
         });
-        int seconds = (int) Seconds.secondsBetween(startTime, endTime).getSeconds();
-        Path path = resp.get(0);
         double totaldistance = path.getDistance();
         double drivenDistance = 0;
-        ArrayList<EdgeVisit> edges = new ArrayList<>();
-        for (EdgeIteratorState s : path.calcEdges()) {
+        ArrayList<EdgeVisit> visits = new ArrayList<>();
+        for (EdgeInternal e : edges) {
             double progress = drivenDistance / totaldistance;
             int hourOfDay = startTime.plusSeconds((int) (progress * seconds)).getHourOfDay();
-            edges.add(new EdgeVisit(s.getEdge(), hourOfDay));
-            drivenDistance += s.getDistance();
+            visits.add(new EdgeVisit(e.edgeId, hourOfDay));
+            drivenDistance += e.distance;
         }
-        return edges;
+        return visits;
+    }
+
+    public GeoJsonFeature geometryEdge(int edgeId) {
+        AllEdgesIterator e = api.getGraph().getAllEdges();
+        while (e.getEdge() != edgeId && e.next()){
+
+        }
+        if (e.getEdge() != edgeId){
+            System.out.println(edgeId);
+            return null;
+        }
+        PointList p = e.getWayGeometry();
+        GeoJsonLineGeometry lineString = new GeoJsonLineGeometry();
+        lineString.addPoint(api.getGraph().getLatitude(e.getBaseNode()), api.getGraph().getLongitude(e.getBaseNode()));
+        e.getBaseNode();
+        for (int i = 0; i < p.getSize(); i++){
+            lineString.addPoint(p.getLatitude(i), p.getLongitude(i));
+        }
+        lineString.addPoint(api.getGraph().getLatitude(e.getAdjNode()), api.getGraph().getLongitude(e.getAdjNode()));
+        return new GeoJsonFeature(lineString);
+    }
+
+    private static class EdgeInternal{
+        private double distance;
+        private int edgeId;
     }
 
     public static class EdgeVisit implements Serializable {
